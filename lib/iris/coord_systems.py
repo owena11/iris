@@ -23,6 +23,26 @@ class CoordSystem(metaclass=ABCMeta):
 
     grid_mapping_name = None
 
+    @abstractmethod
+    def __init__(self, var_name=None, crs_wkt=None):
+        """
+
+        Kwargs:
+
+        * var_name:
+            The netCDF variable name for the dimensional metadata, defaults to `None`
+            where the objects gird_mapping_name is used.
+
+
+        * crs_wkt:
+            The netCDF variable name for the dimensional metadata, defaults to `None`
+            where the objects gird_mapping_name is used.
+
+        """
+        self.var_name = var_name or grid_mapping_name
+        self.crs_wkt = crs_wkt
+
+
     def __eq__(self, other):
         return (
             self.__class__ == other.__class__
@@ -108,6 +128,7 @@ class GeogCS(CoordSystem):
         semi_minor_axis=None,
         inverse_flattening=None,
         longitude_of_prime_meridian=0,
+        var_name=None
     ):
         """
         Creates a new GeogCS.
@@ -120,6 +141,10 @@ class GeogCS(CoordSystem):
             * longitude_of_prime_meridian  -  Can be used to specify the
                                               prime meridian on the ellipsoid
                                               in degrees. Default = 0.
+            * var_name                     -  The netCDF variable name for the
+                                              grid mapping metadata, defaults
+                                              to `None` where the objects
+                                              gird_mapping_name is used.
 
         If just semi_major_axis is set, with no semi_minor_axis or
         inverse_flattening, then a perfect sphere is created from the given
@@ -144,6 +169,7 @@ class GeogCS(CoordSystem):
             custom_cs = GeogCS(6400000, 6300000)
 
         """
+        super().__init__(var_name=var_name)
         # No ellipsoid specified? (0 0 0)
         if (
             (semi_major_axis is None)
@@ -287,6 +313,7 @@ class RotatedGeogCS(CoordSystem):
         grid_north_pole_longitude,
         north_pole_grid_longitude=0,
         ellipsoid=None,
+        var_name=None,
     ):
         """
         Constructs a coordinate system with rotated pole, on an
@@ -305,7 +332,10 @@ class RotatedGeogCS(CoordSystem):
                                           rotated grid in degrees. Default = 0.
             * ellipsoid                 - Optional :class:`GeogCS` defining
                                           the ellipsoid.
-
+            * var_name                  - The netCDF variable name for the grid
+                                          mapping metadata, defaults to `None`
+                                          where the objects gird_mapping_name
+                                          is used.
         Examples::
 
             rotated_cs = RotatedGeogCS(30, 30)
@@ -313,6 +343,7 @@ class RotatedGeogCS(CoordSystem):
                                        ellipsoid=GeogCS(6400000, 6300000))
 
         """
+        super().__init__(var_name=var_name)
         #: The true latitude of the rotated pole in degrees.
         self.grid_north_pole_latitude = float(grid_north_pole_latitude)
 
@@ -401,6 +432,7 @@ class TransverseMercator(CoordSystem):
         false_northing,
         scale_factor_at_central_meridian,
         ellipsoid=None,
+        var_name=None,
     ):
         """
         Constructs a TransverseMercator object.
@@ -428,6 +460,10 @@ class TransverseMercator(CoordSystem):
 
             * ellipsoid
                     Optional :class:`GeogCS` defining the ellipsoid.
+            * var_name
+                    The netCDF variable name for the dimensional metadata,
+                    defaults to `None` where the objects gird_mapping_name
+                    is used.
 
         Example::
 
@@ -436,6 +472,7 @@ class TransverseMercator(CoordSystem):
                                       ellipsoid=airy1830)
 
         """
+        super().__init__(var_name=var_name)
         #: True latitude of planar origin in degrees.
         self.latitude_of_projection_origin = float(
             latitude_of_projection_origin
@@ -527,6 +564,7 @@ class Orthographic(CoordSystem):
         false_easting=0.0,
         false_northing=0.0,
         ellipsoid=None,
+        var_name=None,
     ):
         """
         Constructs an Orthographic coord system.
@@ -550,7 +588,12 @@ class Orthographic(CoordSystem):
         * ellipsoid
             :class:`GeogCS` defining the ellipsoid.
 
+        * var_name
+            The netCDF variable name for the dimensional metadata,
+            defaults to `None` where the objects gird_mapping_name
+            is used.
         """
+        super().__init__(var_name=var_name)
         #: True latitude of planar origin in degrees.
         self.latitude_of_projection_origin = float(
             latitude_of_projection_origin
@@ -618,6 +661,7 @@ class VerticalPerspective(CoordSystem):
         false_easting=0,
         false_northing=0,
         ellipsoid=None,
+        var_name=None,
     ):
         """
         Constructs a Vertical Perspective coord system.
@@ -645,7 +689,13 @@ class VerticalPerspective(CoordSystem):
         * ellipsoid
             :class:`GeogCS` defining the ellipsoid.
 
+        * var_name
+            The netCDF variable name for the dimensional metadata,
+            defaults to `None` where the objects gird_mapping_name
+            is used.
+
         """
+        super().__init__(var_name=var_name)
         #: True latitude of planar origin in degrees.
         self.latitude_of_projection_origin = float(
             latitude_of_projection_origin
@@ -718,6 +768,7 @@ class Geostationary(CoordSystem):
         false_easting=None,
         false_northing=None,
         ellipsoid=None,
+        var_name=None,
     ):
 
         """
@@ -748,7 +799,13 @@ class Geostationary(CoordSystem):
         * ellipsoid (iris.coord_systems.GeogCS):
             :class:`GeogCS` defining the ellipsoid.
 
+        * var_name
+            The netCDF variable name for the dimensional metadata,
+            defaults to `None` where the objects gird_mapping_name
+            is used.
+
         """
+        super().__init__(var_name=var_name)
         #: True latitude of planar origin in degrees.
         self.latitude_of_projection_origin = float(
             latitude_of_projection_origin
@@ -835,6 +892,7 @@ class Stereographic(CoordSystem):
         false_northing=0.0,
         true_scale_lat=None,
         ellipsoid=None,
+        var_name=None,
     ):
         """
         Constructs a Stereographic coord system.
@@ -861,8 +919,13 @@ class Stereographic(CoordSystem):
             * ellipsoid
                     :class:`GeogCS` defining the ellipsoid.
 
-        """
+            * var_name
+                    The netCDF variable name for the dimensional metadata,
+                    defaults to `None` where the objects gird_mapping_name
+                    is used.
 
+        """
+        super().__init__(var_name=var_name)
         #: True latitude of planar origin in degrees.
         self.central_lat = float(central_lat)
 
@@ -928,6 +991,7 @@ class LambertConformal(CoordSystem):
         false_northing=0.0,
         secant_latitudes=(33, 45),
         ellipsoid=None,
+        var_name=None,
     ):
         """
         Constructs a LambertConformal coord system.
@@ -952,6 +1016,11 @@ class LambertConformal(CoordSystem):
             * ellipsoid
                     :class:`GeogCS` defining the ellipsoid.
 
+            * var_name
+                    The netCDF variable name for the grid_mapping metadata,
+                    defaults to `none` where the objects gird_mapping_name
+                    is used.
+
         .. note:
 
             Default arguments are for the familiar USA map:
@@ -960,7 +1029,7 @@ class LambertConformal(CoordSystem):
             secant_latitudes=(33, 45)
 
         """
-
+        super().__init__(var_name=var_name)
         #: True latitude of planar origin in degrees.
         self.central_lat = central_lat
         #: True longitude of planar origin in degrees.
@@ -1035,6 +1104,7 @@ class Mercator(CoordSystem):
         longitude_of_projection_origin=0.0,
         ellipsoid=None,
         standard_parallel=0.0,
+        var_name=None,
     ):
         """
         Constructs a Mercator coord system.
@@ -1046,8 +1116,13 @@ class Mercator(CoordSystem):
                     :class:`GeogCS` defining the ellipsoid.
             * standard_parallel
                     the latitude where the scale is 1. Defaults to 0 degrees.
+            * var_name
+                    The netCDF variable name for the grid_mapping metadata,
+                    defaults to `none` where the objects gird_mapping_name
+                    is used.
 
         """
+        super().__init(var_name=var_name)
         #: True longitude of planar origin in degrees.
         self.longitude_of_projection_origin = longitude_of_projection_origin
         #: Ellipsoid definition.
@@ -1092,6 +1167,7 @@ class LambertAzimuthalEqualArea(CoordSystem):
         false_easting=0.0,
         false_northing=0.0,
         ellipsoid=None,
+        var_name=None,
     ):
         """
         Constructs a Lambert Azimuthal Equal Area coord system.
@@ -1113,7 +1189,13 @@ class LambertAzimuthalEqualArea(CoordSystem):
             * ellipsoid
                     :class:`GeogCS` defining the ellipsoid.
 
+            * var_name
+                    The netCDF variable name for the grid_mapping metadata,
+                    defaults to `none` where the objects gird_mapping_name
+                    is used.
+
         """
+        super().__init__(var_name=var_name)
         #: True latitude of planar origin in degrees.
         self.latitude_of_projection_origin = latitude_of_projection_origin
         #: True longitude of planar origin in degrees.
@@ -1169,6 +1251,7 @@ class AlbersEqualArea(CoordSystem):
         false_northing=0.0,
         standard_parallels=(20.0, 50.0),
         ellipsoid=None,
+        var_name=None,
     ):
         """
         Constructs a Albers Conical Equal Area coord system.
@@ -1194,6 +1277,11 @@ class AlbersEqualArea(CoordSystem):
                     Defaults to (20,50).
             * ellipsoid
                     :class:`GeogCS` defining the ellipsoid.
+
+            * var_name
+                    The netCDF variable name for the grid_mapping metadata,
+                    defaults to `none` where the objects gird_mapping_name
+                    is used.
 
         """
         #: True latitude of planar origin in degrees.
