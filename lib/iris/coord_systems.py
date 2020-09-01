@@ -39,7 +39,7 @@ class CoordSystem(metaclass=ABCMeta):
             where the objects gird_mapping_name is used.
 
         """
-        self.var_name = var_name or grid_mapping_name
+        self.var_name = var_name or type(self).grid_mapping_name
         self.crs_wkt = crs_wkt
 
 

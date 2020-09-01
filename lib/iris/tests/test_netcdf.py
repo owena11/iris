@@ -1016,6 +1016,70 @@ class TestNetCDFSave(tests.IrisTest):
                 file_out, ("netcdf", "netcdf_save_gridmapmulti.cdl")
             )
 
+    def test_netcdf_save_gridmapping_multiple_crs(self):
+        # Test the case where multiple grid mappings are associated with a
+        # single cube.
+        reference_cube = self.cubell
+
+        coord_system = icoord_systems.GeogCS(6371229)
+        coord_system2 = icoord_systems.GeogCS(6371228)
+
+
+        # Add the dimensional coordinates to the cube.
+        reference_cube.add_dim_coord(
+            iris.coords.DimCoord(
+                np.arange(1, 3),
+                "longitude",
+                long_name="longitude_GeogCS_6371229",
+                units="degrees",
+                coord_system=coord_system,
+            ),
+            0,
+        )
+
+        reference_cube.add_dim_coord(
+            iris.coords.DimCoord(
+                np.arange(1, 3),
+                "latitude",
+                long_name="latitude_GeogCS_6371229",
+                units="degrees",
+                coord_system=coord_system,
+            ),
+            1,
+        )
+
+        # Add the aux coordinates to the cube that utilise a different grid mapping.
+        reference_cube.add_dim_coord(
+            iris.coords.DimCoord(
+                np.arange(1, 3),
+                "longitude",
+                long_name="longitude_GeogCS_6371228",
+                units="degrees",
+                coord_system=coord_system2,
+            ),
+            0,
+        )
+
+        reference_cube.add_aux_coord(
+            iris.coords.DimCoord(
+                np.arange(1, 3),
+                "latitude",
+                long_name="latitude_GeogCS_6371228",
+                units="degrees",
+                coord_system=coord_system2,
+            ),
+            1,
+        )
+
+
+        with self.temp_filename(suffix=".nc") as file_out:
+            iris.save(cubes, file_out)
+
+            # Check the netCDF file against CDL expected output.
+            self.assertCDL(
+                file_out, ("netcdf", "netcdf_save_singlecube_gridmapmulti.cdl")
+            )
+
     def test_netcdf_save_conflicting_names(self):
         # Test saving CF-netCDF with a dimension name corresponding to
         # an existing variable name (conflict).

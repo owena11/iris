@@ -14,12 +14,13 @@ Version 1.4, 27 February 2009.
 """
 
 import collections
-from itertools import repeat, zip_longest
+from itertools import chain, repeat, zip_longest
 import os
 import os.path
 import re
 import string
 import warnings
+from weakref import WeakKeyDictionary
 
 import dask.array as da
 import cf_units
@@ -2041,20 +2042,29 @@ class Saver:
             None
 
         """
-        # Get the grid mappings attached to all of the auxiliary coordinates.
-        # Sorting the
-        cs_list = []
-        for coord in zip(cube.coords_,cube.aux_coords):
-            if coord.coord_system:
-                cs.append(coord.coord_system)
 
-        if cs_list:
-            for cs in cs_list:
+
+        # For this cube setup a mapping between each coordinate system on the
+        # coordinates, and setup a mapping the CS and dim order.
+        cs_mapping = WeakKeyDictionary()
+        # Extract all of the dim coords and the associated coord names in the
+        # dim order. Then extract all of the aux_coords in dim order.
+        for coord in chain(cube.dim_coords, cube.aux_coords):
+            var_name = coord.var_name
+            cs = coord.coord_system
+            if cs and cs not in cs_mapping:
+                cs_mapping[cs] = cs_mapping[cs].append(var_name)
+            elif cs:
+                cs_mapping[cs] = [var_name,]
+
+
+        if cs_mapping:
+            for cs in cs_maping.keys():
                 # Grid var not yet created?
-                if cs not in self._coord_systems
+                if cs not in self._coord_systems:
                     while cs.var_name in self._dataset.variables:
-                        aname = self._increment_name(cs.grid_mapping_name)
-                        cs.grid_mapping_name = aname
+                        aname = self._increment_name(cs.var_name)
+                        cs.var_name = aname
 
                     cf_var_grid = self._dataset.createVariable(
                         cs.var_name, np.int32
@@ -2236,13 +2246,17 @@ class Saver:
             # multiple CRS's are provided or WKT is specified we should provide
             # the extended grid_mapping specified in section 5.6 CF conventions
             # 1.7.
-            if cs_list[0].crs_wkt and len(cs_list) == 1:
-                _setncattr(cf_var_cube, "grid_mapping", cs_lis[0].grid_mapping_name)
+            # Handle the simple case where we provide the simple form
+            if len(cs_mapping) == 1 and not next(cs_mapping.keys()).crs_wkt :
+                cs = next(cs_mapping.keys())
+                _setncattr(cf_var_cube, "grid_mapping", cs.var_name)
+            # Provide extended grid mapping syntax, with the grid mapping
+            # ordering determined by the dim ordering on the cube.
             else:
                 grid_mapping_str = ""
-                for cs in cs_list:
-                    grid_mapping_str += "{} : {}".format(cs.var_name,)
-                _setncattr(cf_var_cube, "grid_mapping", grid_mapping_str)
+                for cs, coord_list in cs_mapping.items():
+                    grid_mapping_str += "{} : {}  ".format(cs.var_name, " ".join(coord_list))
+                _setncattr(cf_var_cube, "grid_mapping", grid_mapping_str.strip())
 
 
     def _create_cf_data_variable(
